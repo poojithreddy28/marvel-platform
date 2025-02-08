@@ -15,6 +15,7 @@ import {
   InputAdornment,
   TextField,
   Typography,
+  useMediaQuery,
 } from '@mui/material';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 
@@ -82,6 +83,8 @@ const ChatInterface = () => {
   const currentSession = chat;
   const chatMessages = currentSession?.messages;
   const showNewMessageIndicator = !fullyScrolled && streamingDone;
+
+  const isMobileScreen = useMediaQuery('(max-width:799px)');
 
   const { handleOpenSnackBar } = useContext(AuthContext);
 
@@ -393,8 +396,8 @@ const ChatInterface = () => {
         >
           {/* Render the AddIcon component. */}
           <AddIcon {...styles.quickActionButtonAddIcon} />
-          {/* Render the Typography component to display the text. */}
-          <Typography>Actions</Typography>
+          {/* Render the Typography component if the screen is not mobile size (at least 800 pixels wide). */}
+          {!isMobileScreen && <Typography>Actions</Typography>}
         </Grid>
       </InputAdornment>
     );

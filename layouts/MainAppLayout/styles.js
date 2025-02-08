@@ -38,12 +38,9 @@ const styles = {
     paddingLeft: '24px',
     zIndex: 10,
     backgroundColor: 'transparent',
-    sx: (theme) => ({
+    sx: {
       inset: '0 auto auto auto',
-      [theme.breakpoints.down('laptop')]: {
-        display: 'none',
-      },
-    }),
+    },
   },
   contentGridProps: (extraContentProps) => ({
     container: true,
@@ -52,22 +49,24 @@ const styles = {
     justifyContent: 'center',
     alignItems: 'flex-start',
     marginTop: '70px',
-    sx: {
+    sx: (theme) => ({
       position: 'relative',
-      py: {
-        desktopLarge: 5,
-        desktop: 4,
-        laptop: 5,
+      [theme.breakpoints.up(1080)]: {
+        py: 5,
+        px: 5,
       },
-      px: {
-        desktopLarge: 5,
-        desktop: 4,
-        laptop: 5,
+      [theme.breakpoints.between(800, 1080)]: {
+        py: 4,
+        px: 4,
       },
-      overflow: 'scroll',
+      [theme.breakpoints.down(800)]: {
+        py: 3,
+        px: 3,
+      },
+      overflow: 'auto',
       maxHeight: '100vh',
       ...extraContentProps,
-    },
+    }),
   }),
   bgGridProps: {
     position: 'fixed',

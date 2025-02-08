@@ -1,5 +1,5 @@
 import HistoryIcon from '@mui/icons-material/History';
-import { Grid, MenuItem } from '@mui/material';
+import { Grid, MenuItem, useMediaQuery } from '@mui/material';
 import { useRouter } from 'next/router';
 
 import ChatBubble from '@/assets/svg/ChatBubbleV2.svg';
@@ -41,6 +41,8 @@ const NavMenu = () => {
   const router = useRouter();
   const { pathname } = router;
 
+  const isDesktopScreen = useMediaQuery('(min-width:1080px)');
+
   const setActive = (id) => {
     const isNotHomePage = [
       chatRegex.test(pathname) || historyRegex.test(pathname),
@@ -71,7 +73,10 @@ const NavMenu = () => {
         >
           <Grid {...styles.innerMenuGridProps}>
             <Grid {...styles.menuIconGridProps}>{page.icon}</Grid>
-            <Grid {...styles.menuTitleGridProps}>{page.name}</Grid>
+            {/* Display the menu title text if the screen is desktop size (at least 1080 pixels wide). */}
+            {isDesktopScreen && (
+              <Grid {...styles.menuTitleGridProps}>{page.name}</Grid>
+            )}
           </Grid>
         </MenuItem>
       ))}

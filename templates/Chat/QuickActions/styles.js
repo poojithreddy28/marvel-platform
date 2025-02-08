@@ -45,18 +45,26 @@ const styles = {
     },
   },
   quickActionText: {
-    sx: {
+    sx: (theme) => ({
       fontFamily: 'Satoshi Medium',
       fontStyle: 'normal',
       fontWeight: '500',
-      fontSize: '16px',
+      [theme.breakpoints.down(800)]: {
+        fontSize: '12px',
+      },
+      [theme.breakpoints.between(800, 1080)]: {
+        fontSize: '14px',
+      },
+      [theme.breakpoints.up(1080)]: {
+        fontSize: '15px',
+      },
       lineHeight: '150%',
       display: 'flex',
       alignItems: 'center',
       flex: 'none',
       order: '0',
       flexGrow: '0',
-    },
+    }),
   },
 };
 

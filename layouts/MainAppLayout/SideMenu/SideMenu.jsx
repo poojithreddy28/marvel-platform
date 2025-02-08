@@ -1,5 +1,5 @@
 import { LogoutOutlined } from '@mui/icons-material';
-import { Button, Grid, Typography } from '@mui/material';
+import { Button, Grid, Typography, useMediaQuery } from '@mui/material';
 
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/router';
@@ -23,6 +23,8 @@ import { auth } from '@/libs/redux/store';
 const SideMenu = ({ user }) => {
   const router = useRouter();
 
+  const isMobileScreen = useMediaQuery('(max-width:799px)');
+
   const handleSignOutUser = () => {
     signOut(auth);
   };
@@ -34,9 +36,12 @@ const SideMenu = ({ user }) => {
           <KAIAvatar />
         </Grid>
         <Grid {...styles.titleGridProps}>
-          <Typography {...styles.subtitleProps}>
-            AI Teaching Assistant
-          </Typography>
+          {/* Display the logo text if the screen is not mobile size (at least 800 pixels wide). */}
+          {!isMobileScreen && (
+            <Typography {...styles.subtitleProps}>
+              AI Teaching Assistant
+            </Typography>
+          )}
         </Grid>
       </Grid>
     );
