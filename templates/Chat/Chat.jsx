@@ -378,17 +378,18 @@ const renderNewMessageIndicator = () => {
         onClick={handleScrollToBottom}
         className={`
           ${showIndicator ? 'flex' : 'hidden'}
-          fixed bottom-[150px] left-[40%] -translate-x-1/2 z-50
-          items-center justify-center gap-2
-          bg-[rgb(88,20,244)] hover:bg-[rgb(88,20,244)]
-          text-white text-sm font-medium
-          w-[120px] h-8 px-3
+          fixed bottom-[150px] left-[40%] translate-x-0 z-50
+          items-center justify-center
+          bg-blue-600 hover:bg-blue-700
+          text-white
+          w-8 h-8
           rounded-full shadow-lg
-          transition-all duration-200 ease-in-out
+          transition-all duration-200
+          hover:shadow-xl
+          group
         `}
       >
-        <ArrowDownwardOutlined className="w-4 h-4 text-white" />
-        <span className='text-white'>New Response</span>
+        <ArrowDownwardOutlined className="w-4 h-4 text-white group-hover:animate-bounce" />
       </button>
     </Fade>
   );

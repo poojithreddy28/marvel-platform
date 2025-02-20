@@ -45,7 +45,11 @@ const TextMessage = (props) => {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ duration: 2, ease: 'ease-in' }}
+                transition={{ 
+                  duration: 0.5,  // Reduced duration for smoother experience
+                  ease: [0.4, 0, 0.2, 1] // Material Design 
+                }}
+
               >
                 <Typography {...styles.messageProps()}>
                   <MemoizedReactMarkdown
