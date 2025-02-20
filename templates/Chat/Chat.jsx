@@ -1,12 +1,10 @@
-import { useContext, useEffect, useRef } from 'react';
-
+import { useContext, useEffect, useRef, useState } from 'react';
 import {
   ArrowDownwardOutlined,
   InfoOutlined,
   Settings,
 } from '@mui/icons-material';
 import AddIcon from '@mui/icons-material/Add';
-
 import {
   Button,
   Fade,
@@ -15,24 +13,19 @@ import {
   InputAdornment,
   TextField,
   Typography,
+  CircularProgress,
 } from '@mui/material';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
-
 import { useDispatch, useSelector } from 'react-redux';
-
 import NavigationIcon from '@/assets/svg/Navigation.svg';
-
 import ChatHistoryWindow from './ChatHistoryWindow';
 import ChatSpinner from './ChatSpinner';
 import DefaultPrompt from './DefaultPrompt';
 import Message from './Message';
 import QuickActions from './QuickActions';
 import styles from './styles';
-
 import TextMessage from './TextMessage';
-
 import { MESSAGE_ROLE, MESSAGE_TYPES } from '@/libs/constants/bots';
-
 import { AuthContext } from '@/libs/providers/GlobalProvider';
 import {
   openInfoChat,
@@ -58,6 +51,8 @@ import sendMessage from '@/libs/services/chatbot/sendMessage';
 
 const ChatInterface = () => {
   const messagesContainerRef = useRef();
+  const [isProcessing, setIsProcessing] = useState(false); // State for API processing
+  const [isRendering, setIsRendering] = useState(false); // State for UI rendering
 
   const dispatch = useDispatch();
   const {
@@ -85,8 +80,13 @@ const ChatInterface = () => {
 
   const { handleOpenSnackBar } = useContext(AuthContext);
 
+  // Helper to check if input should be disabled
+  const isInputDisabled = isProcessing || isRendering || typing || streaming || !!error;
+
   const startConversation = async (message) => {
-    // Optionally dispatch a temporary message for the user's input
+    setIsProcessing(true); // Disable input while API processes
+    setIsRendering(true); // Disable input while UI renders
+    
     dispatch(
       setMessages({
         role: MESSAGE_ROLE.HUMAN,
@@ -96,7 +96,6 @@ const ChatInterface = () => {
 
     dispatch(setTyping(true));
 
-    // Define the chat payload
     const chatPayload = {
       user: {
         id: userData?.id,
@@ -107,18 +106,17 @@ const ChatInterface = () => {
       message,
     };
 
-    // Send a chat session
     const { status, data } = await createChatSession(chatPayload, dispatch);
 
-    // Remove typing bubble
     dispatch(setTyping(false));
     if (status === 'created') dispatch(setStreaming(true));
 
-    // Set chat session
     dispatch(setChatSession(data));
     dispatch(setSessionLoaded(true));
 
     dispatch(fetchHistory(userData.id));
+    setIsProcessing(false); // API processing complete
+    // isRendering remains true until Message component calls onRendered
   };
 
   useEffect(() => {
@@ -152,10 +150,8 @@ const ChatInterface = () => {
             const updatedMessages = updatedData.messages;
 
             const lastMessage = updatedMessages[updatedMessages.length - 1];
-            // Convert Firestore timestamp to JavaScript Date object.
             lastMessage.timestamp = lastMessage.timestamp.toDate();
 
-            // Update the history entry with the latest timestamp.
             dispatch(
               updateHistoryEntry({
                 id: sessionId,
@@ -171,6 +167,8 @@ const ChatInterface = () => {
                 })
               );
               dispatch(setTyping(false));
+              // Note: isRendering will be set to false by the Message component
+              // via the onRendered callback once it finishes rendering
             }
           }
         });
@@ -206,15 +204,18 @@ const ChatInterface = () => {
   };
 
   const handleSendMessage = async () => {
-    if (!input) {
-      dispatch(setError('Please enter a message'));
-      setTimeout(() => {
-        dispatch(setError(null));
-      }, 3000);
+    if (!input || isInputDisabled) {
+      if (!input) {
+        dispatch(setError('Please enter a message'));
+        setTimeout(() => {
+          dispatch(setError(null));
+        }, 3000);
+      }
       return;
     }
 
-    // BUG FIX: First checking whether the user has entered any text before setting streaming true amd then sending the message.
+    setIsProcessing(true);
+    setIsRendering(true);
     dispatch(setStreaming(true));
 
     const message = {
@@ -227,12 +228,10 @@ const ChatInterface = () => {
     };
 
     if (!chatMessages) {
-      // Start a new conversation if there are no existing messages
       await startConversation(message);
       return;
     }
 
-    // Add the user's message to the chat
     dispatch(
       setMessages({
         role: MESSAGE_ROLE.HUMAN,
@@ -241,19 +240,25 @@ const ChatInterface = () => {
     );
 
     dispatch(setTyping(true));
+    dispatch(setInput('')); // Clear input after sending
 
-    // Ensure the user’s message is displayed before sending the message
     setTimeout(async () => {
       await sendMessage(
         { message, id: sessionId },
         dispatch,
         handleOpenSnackBar
       );
+      setIsProcessing(false); // API processing complete
+      // isRendering remains true until Message component calls onRendered
     }, 0);
     dispatch(setActionType(null));
   };
 
   const handleQuickReply = async (option) => {
+    if (isInputDisabled) return;
+    
+    setIsProcessing(true);
+    setIsRendering(true);
     dispatch(setInput(option));
     dispatch(setStreaming(true));
 
@@ -269,32 +274,39 @@ const ChatInterface = () => {
     dispatch(
       setMessages({
         role: MESSAGE_ROLE.HUMAN,
+        message, // Add the message to properly render it
       })
     );
     dispatch(setTyping(true));
 
     await sendMessage({ message, id: currentSession?.id }, dispatch);
-
+    setIsProcessing(false);
     dispatch(setActionType(null));
   };
 
-  /* Push Enter */
   const keyDownHandler = async (e) => {
-    if (typing || !input || streaming) return;
+    if (isInputDisabled) return;
     if (e.keyCode === 13) handleSendMessage();
+  };
+
+  // Handler called when Message component finishes rendering AI response
+  const handleMessageRendered = () => {
+    setIsRendering(false);
   };
 
   const renderSendIcon = () => {
     return (
       <InputAdornment position="end">
-        <IconButton
-          onClick={handleSendMessage}
-          {...styles.bottomChatContent.iconButtonProps(
-            typing || error || !input || streaming
-          )}
-        >
-          <NavigationIcon />
-        </IconButton>
+        {isInputDisabled ? (
+          <CircularProgress size={24} color="inherit" />
+        ) : (
+          <IconButton
+            onClick={handleSendMessage}
+            {...styles.bottomChatContent.iconButtonProps(isInputDisabled)}
+          >
+            <NavigationIcon />
+          </IconButton>
+        )}
       </InputAdornment>
     );
   };
@@ -322,7 +334,7 @@ const ChatInterface = () => {
     return (
       <TextMessage
         isMyMessage={false}
-        message="Hello! I’m Marvel, your AI teaching assistant. You can ask any questions realted to best practices in teaching, or working with your students. Feel free to ask me for ideas for your classroom, and the more specific your questions, the better my responses will be. **How can I help you today?**"
+        message="Hello! I'm Marvel, your AI teaching assistant. You can ask any questions related to best practices in teaching, or working with your students. Feel free to ask me for ideas for your classroom, and the more specific your questions, the better my responses will be. **How can I help you today?**"
       />
     );
   };
@@ -338,7 +350,6 @@ const ChatInterface = () => {
           onScroll={handleOnScroll}
           {...styles.centerChat.messagesGridProps}
         >
-          {/* Render the start chat message if there are no chat messages or if the info chat is not open. */}
           {(chatMessages?.length === 0 || !chatMessages) && !infoChatOpened
             ? renderStartChatMessage()
             : null}
@@ -354,6 +365,7 @@ const ChatInterface = () => {
                   streaming={streaming}
                   fullyScrolled={fullyScrolled}
                   key={index}
+                  onRendered={handleMessageRendered} // Pass the callback to set isRendering to false
                 />
               )
           )}
@@ -375,25 +387,19 @@ const ChatInterface = () => {
     );
   };
 
-  /**
-   * Render the Quick Action component as an InputAdornment.
-   * This component is used to toggle the display of the Quick Actions.
-   *
-   * @return {JSX.Element} The rendered Quick Action component.
-   */
   const renderQuickAction = () => {
-    // Render the Quick Action component as an InputAdornment.
     return (
       <InputAdornment position="start">
-        {/* The Grid component used to display the Quick Action. */}
         <Grid
-          // Handle the click event to toggle the display of the Quick Actions.
-          onClick={() => dispatch(setDisplayQuickActions(!displayQuickActions))}
+          onClick={() => !isInputDisabled && dispatch(setDisplayQuickActions(!displayQuickActions))}
           {...styles.quickActionButton}
+          sx={{
+            ...styles.quickActionButton.sx,
+            opacity: isInputDisabled ? 0.6 : 1,
+            cursor: isInputDisabled ? 'not-allowed' : 'pointer',
+          }}
         >
-          {/* Render the AddIcon component. */}
           <AddIcon {...styles.quickActionButtonAddIcon} />
-          {/* Render the Typography component to display the text. */}
           <Typography>Actions</Typography>
         </Grid>
       </InputAdornment>
@@ -404,18 +410,16 @@ const ChatInterface = () => {
     if (!openSettingsChat && !infoChatOpened)
       return (
         <Grid {...styles.bottomChatContent.bottomChatContentGridProps}>
-          {/* Default Prompt Component */}
-          <DefaultPrompt handleSendMessage={handleSendMessage} />
-          {/* Quick Actions Component */}
-          <QuickActions handleSendMessage={handleSendMessage} />
+          <DefaultPrompt handleSendMessage={isInputDisabled ? null : handleSendMessage} />
+          <QuickActions handleSendMessage={isInputDisabled ? null : handleSendMessage} />
           <Grid {...styles.bottomChatContent.chatInputGridProps(!!error)}>
             <TextField
               value={input}
-              onChange={(e) => dispatch(setInput(e.currentTarget.value))}
+              onChange={(e) => !isInputDisabled && dispatch(setInput(e.currentTarget.value))}
               onKeyUp={keyDownHandler}
               error={!!error}
               helperText={error}
-              disabled={!!error}
+              disabled={isInputDisabled}
               focused={false}
               {...styles.bottomChatContent.chatInputProps(
                 renderQuickAction,
