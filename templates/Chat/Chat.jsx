@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef } from 'react';
+import { useState, useContext, useEffect, useRef } from 'react';
 
 import {
   ArrowDownwardOutlined,
@@ -57,6 +57,7 @@ import createChatSession from '@/libs/services/chatbot/createChatSession';
 import sendMessage from '@/libs/services/chatbot/sendMessage';
 
 const ChatInterface = () => {
+  const [isAtTop, setIsAtTop] = useState(true); 
   const messagesContainerRef = useRef();
   const messagesEndRef = useRef(null);
 
@@ -82,7 +83,6 @@ const ChatInterface = () => {
 
   const currentSession = chat;
   const chatMessages = currentSession?.messages;
-  const showNewMessageIndicator = !fullyScrolled && streamingDone;
 
   const { handleOpenSnackBar } = useContext(AuthContext);
 
@@ -166,6 +166,7 @@ const ChatInterface = () => {
  
             console.log(" AI message received - setting `streamingDone` to true");
             dispatch(setStreamingDone(true));
+            dispatch(setStreaming(false)); // Stop streaming after AI message
  
             // Force `fullyScrolled` to false since a new AI message has arrived
             dispatch(setFullyScrolled(false));
@@ -179,7 +180,7 @@ const ChatInterface = () => {
     };
   }, [sessionLoaded, currentSession]);
  
-  //Task 3: Prevent forced scrolling when the user manually scrolls up
+  //BULLET 3: Prevent forced scrolling when the user manually scrolls up
   const handleOnScroll = () => {
     if (!messagesContainerRef.current) return;
   
@@ -192,19 +193,25 @@ const ChatInterface = () => {
       dispatch(setFullyScrolled(isAtBottom));
     }
   
-    // Show "New Response" indicator when user scrolls up
-    if (!isAtBottom) {
-      dispatch(setStreamingDone(true));
-    }
+    // Update isAtTop based on whether scrollTop is zero
+    setIsAtTop(scrollTop === 0);
+  
+    // Remove or comment out this block:
+    // if (!isAtBottom) {
+    //   dispatch(setStreamingDone(true));
+    // }
   };
+  
+ 
  
  
   const handleScrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    
-    // Reset both streaming done and fully scrolled states
-    dispatch(setStreamingDone(false));
-    dispatch(setFullyScrolled(true));
+ 
+    //  Only hide indicator if it’s currently visible
+    if (streamingDone) {
+      dispatch(setStreamingDone(false));
+    }
   };
  
  
@@ -220,6 +227,7 @@ const ChatInterface = () => {
 
     // BUG FIX: First checking whether the user has entered any text before setting streaming true amd then sending the message.
     dispatch(setStreaming(true));
+    dispatch(setStreamingDone(false));
 
     const message = {
       role: MESSAGE_ROLE.HUMAN,
@@ -367,34 +375,49 @@ const ChatInterface = () => {
       </Grid>
     );
   };
+//BULLET 4: Introduce a “New Response” indicator
 
-//“New Response” indicator
 const renderNewMessageIndicator = () => {
-  const showIndicator = (!fullyScrolled && streamingDone) || !fullyScrolled;
-  
   return (
-    <Fade in={showIndicator}>
-      <button
+   
+      <Fade in={isAtTop && streamingDone && !streaming}>
+      <Button
+        startIcon={<ArrowDownwardOutlined fontSize="small" />} // Keep small icon
         onClick={handleScrollToBottom}
-        className={`
-          ${showIndicator ? 'flex' : 'hidden'}
-          fixed bottom-[150px] left-[40%] translate-x-0 z-50
-          items-center justify-center
-          bg-blue-600 hover:bg-blue-700
-          text-white
-          w-8 h-8
-          rounded-full shadow-lg
-          transition-all duration-200
-          hover:shadow-xl
-          group
-        `}
+        {...styles.newMessageButtonProps}
+        style={{
+          display: isAtTop && streamingDone && !streaming ? 'flex' : 'none',
+          position: "absolute",
+          bottom: "150px",
+          left: "40%", 
+          transform: "translateX(-50%)", // Ensures perfect centering
+          zIndex: 1000,
+          width: "120px", 
+          padding: "6px", 
+          fontSize: "12px", 
+          height: "30px", 
+          borderRadius: "15px", 
+          textTransform: "none", 
+        }}
       >
-        <ArrowDownwardOutlined className="w-4 h-4 text-white group-hover:animate-bounce" />
-      </button>
+        New Response
+      </Button>
     </Fade>
   );
 };
 
+
+
+
+
+
+
+
+ 
+ 
+ 
+ 
+ 
   /**
    * Render the Quick Action component as an InputAdornment.
    * This component is used to toggle the display of the Quick Actions.
@@ -423,9 +446,7 @@ const renderNewMessageIndicator = () => {
   const renderBottomChatContent = () => {
     if (!openSettingsChat && !infoChatOpened)
       return (
-        <Grid {...styles.bottomChatContent.bottomChatContentGridProps}
-        
-        >
+        <Grid {...styles.bottomChatContent.bottomChatContentGridProps}>
           {/* Default Prompt Component */}
           <DefaultPrompt handleSendMessage={handleSendMessage} />
           {/* Quick Actions Component */}

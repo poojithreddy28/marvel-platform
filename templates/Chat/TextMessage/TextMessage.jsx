@@ -15,21 +15,31 @@ const TextMessage = (props) => {
   return (
     <>
       {isMyMessage ? (
-        // User message (no animation)
+        // User message with fade-in and fade-out effect
         <Grid id="message" {...styles.mainGridProps(isMyMessage)}>
           <Grid {...styles.messageWrapperProps(isMyMessage)}>
-            <Typography {...styles.messageProps()}>
-              <MemoizedReactMarkdown
-                remarkPlugins={[remarkGfm, emoji]}
-                components={{ code: CodeComponent }}
-              >
-                {message}
-              </MemoizedReactMarkdown>
-            </Typography>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{
+                duration: 0.5,
+                ease: [0.4, 0, 0.2, 1], // Material Design easing
+              }}
+            >
+              <Typography {...styles.messageProps()}>
+                <MemoizedReactMarkdown
+                  remarkPlugins={[remarkGfm, emoji]}
+                  components={{ code: CodeComponent }}
+                >
+                  {message}
+                </MemoizedReactMarkdown>
+              </Typography>
+            </motion.div>
           </Grid>
         </Grid>
       ) : (
-        // BULLET 1: AI message with full fade-in effect, ensuring only the text fades in
+        // AI message with fade-in and fade-out effect, avatar remains static
         <Grid id="message" {...styles.mainGridProps(isMyMessage)}>
           <Grid {...styles.messageWrapperProps(isMyMessage)}>
             <Box>
@@ -41,15 +51,12 @@ const TextMessage = (props) => {
               />
             </Box>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ 
-                  duration: 0.5,  // Reduced duration for smoother experience
-                  ease: [0.4, 0, 0.2, 1] // Material Design 
-                }}
-
+                exit={{ opacity: 0 }}
+                transition={{ duration: 3.5, ease: "easeInOut" }}
+                
               >
                 <Typography {...styles.messageProps()}>
                   <MemoizedReactMarkdown
