@@ -1,3 +1,4 @@
+/* eslint-disable consistent-return */
 import { useState, useContext, useEffect, useRef } from 'react';
 
 import {
@@ -57,7 +58,7 @@ import createChatSession from '@/libs/services/chatbot/createChatSession';
 import sendMessage from '@/libs/services/chatbot/sendMessage';
 
 const ChatInterface = () => {
-  const [isAtTop, setIsAtTop] = useState(true); 
+  const [isAtTop, setIsAtTop] = useState(true);
   const messagesContainerRef = useRef();
   const messagesEndRef = useRef(null);
 
@@ -131,90 +132,87 @@ const ChatInterface = () => {
   // BULLET 2: Ensure smooth auto-scrolling
   useEffect(() => {
     if (messagesEndRef.current && fullyScrolled) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [chatMessages, fullyScrolled]); //  Now checks `fullyScrolled` before scrolling
- 
 
   useEffect(() => {
     if (!sessionLoaded || !currentSession) return;
- 
+
     let unsubscribe;
- 
+
     const sessionRef = query(
-      collection(firestore, "chatSessions"),
-      where("id", "==", sessionId)
+      collection(firestore, 'chatSessions'),
+      where('id', '==', sessionId)
     );
- 
+
     unsubscribe = onSnapshot(sessionRef, async (snapshot) => {
       snapshot.docChanges().forEach((change) => {
-        if (change.type === "modified") {
+        if (change.type === 'modified') {
           const updatedData = change.doc.data();
           const updatedMessages = updatedData.messages;
- 
+
           const lastMessage = updatedMessages[updatedMessages.length - 1];
           lastMessage.timestamp = lastMessage.timestamp.toDate(); // Convert Firestore timestamp
- 
-          dispatch(updateHistoryEntry({
-            id: sessionId,
-            updatedAt: updatedData.updatedAt.toDate().toISOString(),
-          }));
- 
+
+          dispatch(
+            updateHistoryEntry({
+              id: sessionId,
+              updatedAt: updatedData.updatedAt.toDate().toISOString(),
+            })
+          );
+
           if (lastMessage?.role === MESSAGE_ROLE.AI) {
-            dispatch(setMessages({ role: MESSAGE_ROLE.AI, response: lastMessage }));
+            dispatch(
+              setMessages({ role: MESSAGE_ROLE.AI, response: lastMessage })
+            );
             dispatch(setTyping(false));
- 
-            console.log(" AI message received - setting `streamingDone` to true");
+
+            console.log(
+              ' AI message received - setting `streamingDone` to true'
+            );
             dispatch(setStreamingDone(true));
             dispatch(setStreaming(false)); // Stop streaming after AI message
- 
+
             // Force `fullyScrolled` to false since a new AI message has arrived
             dispatch(setFullyScrolled(false));
           }
         }
       });
     });
- 
+
     return () => {
       if (unsubscribe) unsubscribe();
     };
   }, [sessionLoaded, currentSession]);
- 
+
   //BULLET 3: Prevent forced scrolling when the user manually scrolls up
   const handleOnScroll = () => {
     if (!messagesContainerRef.current) return;
-  
-    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+
+    const { scrollTop, scrollHeight, clientHeight } =
+      messagesContainerRef.current;
     const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
-  
-    console.log(" User Scrolled - At Bottom?", isAtBottom);
-  
+
+    console.log(' User Scrolled - At Bottom?', isAtBottom);
+
     if (fullyScrolled !== isAtBottom) {
       dispatch(setFullyScrolled(isAtBottom));
     }
-  
-    // Update isAtTop based on whether scrollTop is zero
-    setIsAtTop(scrollTop === 0);
-  
-    // Remove or comment out this block:
-    // if (!isAtBottom) {
-    //   dispatch(setStreamingDone(true));
-    // }
-  };
-  
- 
- 
- 
-  const handleScrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
- 
-    //  Only hide indicator if it’s currently visible
-    if (streamingDone) {
-      dispatch(setStreamingDone(false));
+
+    // Show "New Response" indicator when user scrolls up
+    if (!isAtBottom) {
+      dispatch(setStreamingDone(true));
     }
   };
- 
- 
+
+  const handleScrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+
+    // Reset both streaming done and fully scrolled states
+    dispatch(setStreamingDone(false));
+    dispatch(setFullyScrolled(true));
+  };
 
   const handleSendMessage = async () => {
     if (!input) {
@@ -227,7 +225,6 @@ const ChatInterface = () => {
 
     // BUG FIX: First checking whether the user has entered any text before setting streaming true amd then sending the message.
     dispatch(setStreaming(true));
-    dispatch(setStreamingDone(false));
 
     const message = {
       role: MESSAGE_ROLE.HUMAN,
@@ -375,49 +372,33 @@ const ChatInterface = () => {
       </Grid>
     );
   };
-//BULLET 4: Introduce a “New Response” indicator
+  //BULLET 4: Introduce a “New Response” indicator
 
-const renderNewMessageIndicator = () => {
-  return (
-   
-      <Fade in={isAtTop && streamingDone && !streaming}>
-      <Button
-        startIcon={<ArrowDownwardOutlined fontSize="small" />} // Keep small icon
-        onClick={handleScrollToBottom}
-        {...styles.newMessageButtonProps}
-        style={{
-          display: isAtTop && streamingDone && !streaming ? 'flex' : 'none',
-          position: "absolute",
-          bottom: "150px",
-          left: "40%", 
-          transform: "translateX(-50%)", // Ensures perfect centering
-          zIndex: 1000,
-          width: "120px", 
-          padding: "6px", 
-          fontSize: "12px", 
-          height: "30px", 
-          borderRadius: "15px", 
-          textTransform: "none", 
-        }}
-      >
-        New Response
-      </Button>
-    </Fade>
-  );
-};
+  const renderNewMessageIndicator = () => {
+    const showIndicator = (!fullyScrolled && streamingDone) || !fullyScrolled;
 
+    return (
+      <Fade in={showIndicator}>
+        <button
+          onClick={handleScrollToBottom}
+          className={`
+          ${showIndicator ? 'flex' : 'hidden'}
+          fixed bottom-[150px] left-[40%] -translate-x-1/2 z-50
+          items-center justify-center gap-2
+          bg-[rgb(88,20,244)] hover:bg-[rgb(88,20,244)]
+          text-white text-sm font-medium
+          w-[120px] h-8 px-3
+          rounded-full shadow-lg
+          transition-all duration-200 ease-in-out
+        `}
+        >
+          <ArrowDownwardOutlined className="w-4 h-4 text-white" />
+          <span className="text-white">New Response</span>
+        </button>
+      </Fade>
+    );
+  };
 
-
-
-
-
-
-
- 
- 
- 
- 
- 
   /**
    * Render the Quick Action component as an InputAdornment.
    * This component is used to toggle the display of the Quick Actions.
