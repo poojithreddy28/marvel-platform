@@ -26,8 +26,6 @@ import styles from './styles';
  * - Course Title: The title of the course.
  * - Grade Level: The grade level of the course.
  * - Description: A brief description of the course.
- * - Instructor Name: The name of the instructor.
- * - Instructor Title: The title of the instructor.
  * - Objectives: The objectives of the course.
  * - Learning Outcomes: The learning outcomes of the course.
  */
@@ -59,14 +57,6 @@ const SyllabusGeneratorResponse = () => {
             <TableRow>
               <TableCell>Description</TableCell>
               <TableCell>{response.course_information.description}</TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell>Instructor Name</TableCell>
-              <TableCell>{response.instructor_information.name}</TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell>Instructor Title</TableCell>
-              <TableCell>{response.instructor_information.title}</TableCell>
             </TableRow>
             <TableRow>
               <TableCell>Objectives</TableCell>
