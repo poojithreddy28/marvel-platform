@@ -63,14 +63,24 @@ const styles = {
     flexWrap: 'nowrap',
     alignItems: 'flex-start',
     gap: '20px',
-    sx: {
+    sx: (theme) => ({
       borderRadius: isMyMessage && '10px 10px 0px 10px',
-      px: isMyMessage && { laptop: 2, desktop: 2.5, desktopMedium: 3 },
-      py: isMyMessage && { laptop: 1, desktop: 1.5, desktopMedium: 2 },
+      [theme.breakpoints.down(800)]: {
+        py: isMyMessage && 1,
+        px: isMyMessage && 2,
+      },
+      [theme.breakpoints.between(800, 1080)]: {
+        py: isMyMessage && 1.5,
+        px: isMyMessage && 2.5,
+      },
+      [theme.breakpoints.up(1080)]: {
+        py: isMyMessage && 2,
+        px: isMyMessage && 3,
+      },
       textAlign: 'left',
       // background: (theme) => isMyMessage && theme.palette.primary.main,
       background: isMyMessage && '#33363C',
-    },
+    }),
   }),
 };
 

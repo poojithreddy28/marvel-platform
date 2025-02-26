@@ -2,15 +2,22 @@ const transition = 'all 0.2s ease-in';
 
 const styles = {
   chatHistoryWindow: {
-    sx: {
+    sx: (theme) => ({
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'flex-end',
-      minWidth: '232px',
-      maxWidth: '232px',
+      [theme.breakpoints.down(800)]: {
+        minWidth: '95px',
+        maxWidth: '95px',
+      },
+      [theme.breakpoints.up(800)]: {
+        minWidth: '232px',
+        maxWidth: '232px',
+      },
       height: '100%',
       borderRadius: '10px',
-    },
+      transition: 'all 0.5s ease',
+    }),
   },
   chatHistoryHeader: (showHistory) => ({
     sx: {

@@ -46,10 +46,21 @@ const styles = {
     flexDirection: 'row',
     justifyContent: 'flex-start',
     alignItems: 'center',
-    paddingTop: '8px',
-    paddingRight: '12px',
-    paddingBottom: '8px',
-    paddingLeft: '12px',
+    sx: (theme) => ({
+      transition: 'all 0.5s ease',
+      [theme.breakpoints.between(800, 1080)]: {
+        paddingTop: '6px',
+        paddingRight: '6px',
+        paddingBottom: '6px',
+        paddingLeft: '6px',
+      },
+      [theme.breakpoints.up(1080)]: {
+        paddingTop: '8px',
+        paddingRight: '12px',
+        paddingBottom: '8px',
+        paddingLeft: '12px',
+      },
+    }),
   },
   menuIconGridProps: {
     container: true,
@@ -74,7 +85,14 @@ const styles = {
     width: 'auto',
     maxHeight: '24px',
     height: 'auto',
-    fontSize: { mobileSmall: '16px', desktop: '16px' },
+    sx: (theme) => ({
+      [theme.breakpoints.up(1080)]: {
+        fontSize: '16px',
+      },
+      [theme.breakpoints.between(800, 1080)]: {
+        fontSize: '13px',
+      },
+    }),
   },
 };
 
