@@ -24,14 +24,25 @@ const styles = {
     item: true,
     width: 'auto',
     maxWidth: '100%',
-    sx: {
+    sx: (theme) => ({
       borderRadius: '18px',
-      px: 3,
-      py: { laptop: 1.5, desktop: 2 },
+      transition: 'all 0.5s ease',
+      [theme.breakpoints.down(800)]: {
+        px: 2,
+        py: 1,
+      },
+      [theme.breakpoints.between(800, 1080)]: {
+        px: 2.5,
+        py: 1.5,
+      },
+      [theme.breakpoints.up(1080)]: {
+        px: 3,
+        py: 2,
+      },
       textAlign: 'left',
       background: 'transparent',
       border: '2px solid #B791FF',
-    },
+    }),
   }),
 };
 

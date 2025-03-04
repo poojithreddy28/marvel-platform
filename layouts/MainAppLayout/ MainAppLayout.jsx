@@ -32,9 +32,9 @@ const MainAppLayout = (props) => {
   const auth = useSelector((state) => state.auth);
   const user = useSelector((state) => state.user);
 
-  const isTabletScreen = useMediaQuery((theme) =>
-    theme.breakpoints.down('laptop')
-  );
+  // const isTabletScreen = useMediaQuery((theme) =>
+  //   theme.breakpoints.down('laptop')
+  // );
 
   const isLoading = auth.loading || user.loading || !user.data || !auth.data;
 
@@ -71,8 +71,9 @@ const MainAppLayout = (props) => {
   return (
     <Grid {...styles.mainGridProps}>
       {renderHead()}
-      {isTabletScreen && <AppDisabled head={renderHead()} />}
-      {!isTabletScreen && renderApp()}
+      {/* {isTabletScreen && <AppDisabled head={renderHead()} />}
+      {!isTabletScreen && renderApp()} */}
+      {renderApp()}
     </Grid>
   );
 };

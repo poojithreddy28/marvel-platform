@@ -31,7 +31,18 @@ const styles = {
     container: true,
     item: true,
     width: 'auto',
-    px: { laptop: 0.5, desktop: 1.5, desktopMedium: 2 },
+    sx: (theme) => ({
+      transition: 'all 0.5s ease',
+      [theme.breakpoints.down(800)]: {
+        px: 0,
+      },
+      [theme.breakpoints.between(800, 1080)]: {
+        px: 1,
+      },
+      [theme.breakpoints.up(1080)]: {
+        px: 2,
+      },
+    }),
   },
   logoutButtonProps: {
     variant: 'outlined',
@@ -92,10 +103,19 @@ const styles = {
     width: 'auto',
     justifyContent: 'center',
     alignItems: 'center',
-    sx: {
+    sx: (theme) => ({
       cursor: 'pointer',
-    },
-    px: { laptop: 0.5, desktop: 1.5, desktopMedium: 2 },
+      transition: 'all 0.5s ease',
+      [theme.breakpoints.down(800)]: {
+        px: 0,
+      },
+      [theme.breakpoints.between(800, 1080)]: {
+        px: 1,
+      },
+      [theme.breakpoints.up(1080)]: {
+        px: 2,
+      },
+    }),
   },
 
   profileNameProps: {

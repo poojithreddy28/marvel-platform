@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { Grid, Typography } from '@mui/material';
+import { Grid, Typography, useMediaQuery } from '@mui/material';
 
 import ChatHistoryButtonIcon from '@/assets/svg/ChatHistoryButtonIcon.svg';
 import ChatIcon from '@/assets/svg/ChatIcon.svg';
@@ -25,14 +25,19 @@ const ChatHistoryWindow = () => {
    */
   const toggleHistory = () => setShowHistory((prev) => !prev);
 
+  const isMobileScreen = useMediaQuery('(max-width:799px)');
+
   return (
     <Grid {...styles.chatHistoryWindow}>
       <Grid {...styles.chatHistoryHeader(showHistory)}>
         <Grid {...styles.chatHistoryHeaderTitleContainer}>
           <Grid>{showHistory ? <ChatIconFill /> : <ChatIcon />}</Grid>
-          <Typography {...styles.chatHistoryHeaderTitleText}>
-            Chat History
-          </Typography>
+          {/* Display the Chat History text if the screen is not mobile size (at least 800 pixels wide). */}
+          {!isMobileScreen && (
+            <Typography {...styles.chatHistoryHeaderTitleText}>
+              Chat History
+            </Typography>
+          )}
         </Grid>
         <Grid
           {...styles.chatHistoryHeaderButton(showHistory)}

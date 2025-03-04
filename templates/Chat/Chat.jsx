@@ -1,4 +1,7 @@
-import { useContext, useEffect, useRef, useState } from 'react';
+
+/* eslint-disable consistent-return */
+import { useState, useContext, useEffect, useRef } from 'react';
+
 import {
   ArrowDownwardOutlined,
   InfoOutlined,
@@ -14,6 +17,7 @@ import {
   TextField,
   Typography,
   CircularProgress,
+  useMediaQuery,
 } from '@mui/material';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { useDispatch, useSelector } from 'react-redux';
@@ -50,9 +54,11 @@ import createChatSession from '@/libs/services/chatbot/createChatSession';
 import sendMessage from '@/libs/services/chatbot/sendMessage';
 
 const ChatInterface = () => {
+  const [isAtTop, setIsAtTop] = useState(true);
   const messagesContainerRef = useRef();
   const [isProcessing, setIsProcessing] = useState(false); // State for API processing
   const [isRendering, setIsRendering] = useState(false); // State for UI rendering
+  const messagesEndRef = useRef(null);
 
   const dispatch = useDispatch();
   const {
@@ -76,7 +82,8 @@ const ChatInterface = () => {
 
   const currentSession = chat;
   const chatMessages = currentSession?.messages;
-  const showNewMessageIndicator = !fullyScrolled && streamingDone;
+
+  const isMobileScreen = useMediaQuery('(max-width:799px)');
 
   const { handleOpenSnackBar } = useContext(AuthContext);
 
@@ -125,82 +132,87 @@ const ChatInterface = () => {
       dispatch(resetChat());
     };
   }, []);
+  // BULLET 2: Ensure smooth auto-scrolling
+  useEffect(() => {
+    if (messagesEndRef.current && fullyScrolled) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages, fullyScrolled]); //  Now checks `fullyScrolled` before scrolling
 
   useEffect(() => {
+    if (!sessionLoaded || !currentSession) return;
+
     let unsubscribe;
 
-    if (sessionLoaded || currentSession) {
-      messagesContainerRef.current?.scrollTo(
-        0,
-        messagesContainerRef.current?.scrollHeight,
-        {
-          behavior: 'smooth',
-        }
-      );
+    const sessionRef = query(
+      collection(firestore, 'chatSessions'),
+      where('id', '==', sessionId)
+    );
 
-      const sessionRef = query(
-        collection(firestore, 'chatSessions'),
-        where('id', '==', sessionId)
-      );
+    unsubscribe = onSnapshot(sessionRef, async (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === 'modified') {
+          const updatedData = change.doc.data();
+          const updatedMessages = updatedData.messages;
 
-      unsubscribe = onSnapshot(sessionRef, async (snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-          if (change.type === 'modified') {
-            const updatedData = change.doc.data();
-            const updatedMessages = updatedData.messages;
+          const lastMessage = updatedMessages[updatedMessages.length - 1];
+          lastMessage.timestamp = lastMessage.timestamp.toDate(); // Convert Firestore timestamp
+          dispatch(
+            updateHistoryEntry({
+              id: sessionId,
+              updatedAt: updatedData.updatedAt.toDate().toISOString(),
+            })
+          );
 
-            const lastMessage = updatedMessages[updatedMessages.length - 1];
-            lastMessage.timestamp = lastMessage.timestamp.toDate();
-
+          if (lastMessage?.role === MESSAGE_ROLE.AI) {
             dispatch(
-              updateHistoryEntry({
-                id: sessionId,
-                updatedAt: updatedData.updatedAt.toDate().toISOString(),
-              })
+              setMessages({ role: MESSAGE_ROLE.AI, response: lastMessage })
             );
+            dispatch(setTyping(false));
+            console.log(
+              ' AI message received - setting `streamingDone` to true'
+            );
+            dispatch(setStreamingDone(true));
+            dispatch(setStreaming(false)); // Stop streaming after AI message
 
-            if (lastMessage?.role === MESSAGE_ROLE.AI) {
-              dispatch(
-                setMessages({
-                  role: MESSAGE_ROLE.AI,
-                  response: lastMessage,
-                })
-              );
-              dispatch(setTyping(false));
-              // Note: isRendering will be set to false by the Message component
-              // via the onRendered callback once it finishes rendering
-            }
+            // Force `fullyScrolled` to false since a new AI message has arrived
+            dispatch(setFullyScrolled(false));
           }
-        });
+        }
       });
-    }
+    });
 
     return () => {
-      if (sessionLoaded || currentSession) unsubscribe();
+      if (unsubscribe) unsubscribe();
     };
-  }, [sessionLoaded]);
+  }, [sessionLoaded, currentSession]);
 
+  //BULLET 3: Prevent forced scrolling when the user manually scrolls up
   const handleOnScroll = () => {
-    const scrolled =
-      Math.abs(
-        messagesContainerRef.current.scrollHeight -
-          messagesContainerRef.current.clientHeight -
-          messagesContainerRef.current.scrollTop
-      ) <= 1;
+    if (!messagesContainerRef.current) return;
 
-    if (fullyScrolled !== scrolled) dispatch(setFullyScrolled(scrolled));
+    const { scrollTop, scrollHeight, clientHeight } =
+      messagesContainerRef.current;
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
+
+    console.log(' User Scrolled - At Bottom?', isAtBottom);
+
+    if (fullyScrolled !== isAtBottom) {
+      dispatch(setFullyScrolled(isAtBottom));
+    }
+
+    // Show "New Response" indicator when user scrolls up
+    if (!isAtBottom) {
+      dispatch(setStreamingDone(true));
+    }
   };
 
   const handleScrollToBottom = () => {
-    messagesContainerRef.current?.scrollTo(
-      0,
-      messagesContainerRef.current?.scrollHeight,
-      {
-        behavior: 'smooth',
-      }
-    );
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 
+    // Reset both streaming done and fully scrolled states
     dispatch(setStreamingDone(false));
+    dispatch(setFullyScrolled(true));
   };
 
   const handleSendMessage = async () => {
@@ -370,19 +382,34 @@ const ChatInterface = () => {
               )
           )}
           {typing && <ChatSpinner />}
+          <div ref={messagesEndRef} />
         </Grid>
       </Grid>
     );
   };
+  //BULLET 4: Introduce a “New Response” indicator
 
   const renderNewMessageIndicator = () => {
+    const showIndicator = (!fullyScrolled && streamingDone) || !fullyScrolled;
+
     return (
-      <Fade in={showNewMessageIndicator}>
-        <Button
-          startIcon={<ArrowDownwardOutlined />}
+      <Fade in={showIndicator}>
+        <button
           onClick={handleScrollToBottom}
-          {...styles.newMessageButtonProps}
-        />
+          className={`
+          ${showIndicator ? 'flex' : 'hidden'}
+          fixed bottom-[150px] left-[40%] -translate-x-1/2 z-50
+          items-center justify-center gap-2
+          bg-[rgb(88,20,244)] hover:bg-[rgb(88,20,244)]
+          text-white text-sm font-medium
+          w-[120px] h-8 px-3
+          rounded-full shadow-lg
+          transition-all duration-200 ease-in-out
+        `}
+        >
+          <ArrowDownwardOutlined className="w-4 h-4 text-white" />
+          <span className="text-white">New Response</span>
+        </button>
       </Fade>
     );
   };
@@ -400,7 +427,8 @@ const ChatInterface = () => {
           }}
         >
           <AddIcon {...styles.quickActionButtonAddIcon} />
-          <Typography>Actions</Typography>
+          {/* Render the Typography component if the screen is not mobile size (at least 800 pixels wide). */}
+          {!isMobileScreen && <Typography>Actions</Typography>}
         </Grid>
       </InputAdornment>
     );

@@ -17,7 +17,7 @@ const styles = {
     justifyContent: 'center',
     alignItems: 'flex-start',
     rowGap: 5,
-    maxWidth: 1200,
+    maxWidth: 1605,
   },
   moreChat: {
     moreChatProps: {
@@ -142,10 +142,18 @@ const styles = {
       flexDirection: 'column',
       justifyContent: 'center',
       zIndex: 0,
-      px: { laptop: 2, desktop: 2.5, desktopMedium: 3 },
-      sx: {
+      sx: (theme) => ({
         overflowY: 'auto',
-      },
+        [theme.breakpoints.down(800)]: {
+          px: 1,
+        },
+        [theme.breakpoints.between(800, 1080)]: {
+          px: 2,
+        },
+        [theme.breakpoints.up(1080)]: {
+          px: 3,
+        },
+      }),
     },
     noMessagesGridProps: {
       container: true,
@@ -191,8 +199,20 @@ const styles = {
       width: '100%',
       justifyContent: 'space-between',
       alignItems: 'center',
-      pt: { laptop: 2, desktop: 2.5, desktopMedium: 3 },
-      px: { laptop: 2, desktop: 2.5, desktopMedium: 3 },
+      sx: (theme) => ({
+        [theme.breakpoints.down(800)]: {
+          pt: 1,
+          px: 1,
+        },
+        [theme.breakpoints.between(800, 1080)]: {
+          pt: 2,
+          px: 2,
+        },
+        [theme.breakpoints.up(1080)]: {
+          pt: 3,
+          px: 3,
+        },
+      }),
     },
     bottomBarChatProps: {
       container: true,
@@ -225,20 +245,34 @@ const styles = {
       sx: { width: '100%', height: '100%' },
       InputProps: {
         notched: false,
-        sx: () => ({
+        sx: (theme) => ({
           display: 'flex',
           flexDirection: 'row',
           alignItems: 'center',
           padding: '0px',
-          gap: '20px',
           bgcolor: '#181A20',
           borderRadius: '50px',
           color: '#9E94A5',
-          pl: { laptop: '6px', desktop: '10px' },
-          pr: { laptop: '8px', desktop: '10px' },
+          [theme.breakpoints.down(800)]: {
+            pl: '8px',
+            pr: '8px',
+            gap: '5px',
+            fontSize: '16px',
+          },
+          [theme.breakpoints.between(800, 1080)]: {
+            pl: '8px',
+            pr: '8px',
+            gap: '10px',
+            fontSize: '18px',
+          },
+          [theme.breakpoints.up(1080)]: {
+            pl: '10px',
+            pr: '10px',
+            gap: '20px',
+            fontSize: '20px',
+          },
           height: '100%',
           fontFamily: 'Satoshi Medium',
-          fontSize: { laptop: '16px', desktop: '18px', desktopMedium: '20px' },
           whiteSpace: 'pre-wrap',
           lineHeight: '35px',
         }),
@@ -246,13 +280,26 @@ const styles = {
         startAdornment: renderQuicKAction(),
       },
       FormHelperTextProps: {
-        sx: {
+        sx: (theme) => ({
           position: 'absolute',
-          transform: 'translate(150px, 30%)',
           fontFamily: 'Satoshi Medium',
-          fontSize: { mobileSmall: '16px', desktopMedium: '20px' },
           lineHeight: '35px',
-        },
+          [theme.breakpoints.up(1080)]: {
+            fontSize: '20px',
+            pl: '150px',
+            py: '8px',
+          },
+          [theme.breakpoints.between(800, 1080)]: {
+            fontSize: '18px',
+            pl: '140px',
+            py: '9px',
+          },
+          [theme.breakpoints.down(800)]: {
+            fontSize: '16px',
+            pl: '35px',
+            py: '10px',
+          },
+        }),
       },
     }),
     sendIconProps: {
@@ -374,8 +421,13 @@ const styles = {
   },
 
   quickActionButton: {
-    sx: {
-      padding: '12px 20px',
+    sx: (theme) => ({
+      [theme.breakpoints.down(800)]: {
+        padding: '0px 0px',
+      },
+      [theme.breakpoints.up(800)]: {
+        padding: '12px 20px',
+      },
       cursor: 'pointer',
       background: '#AC92FF',
       borderRadius: '40px',
@@ -386,10 +438,11 @@ const styles = {
       flex: 'none',
       order: '0',
       flexGrow: '0',
+      transition: 'all 0.5s ease',
       '&:hover': {
         backgroundColor: 'rgb(88,20,244)',
       },
-    },
+    }),
   },
   quickActionButtonAddIcon: {
     sx: {
